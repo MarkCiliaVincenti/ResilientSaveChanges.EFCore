@@ -90,3 +90,6 @@ services.AddPooledDbContextFactory<MyDbContext>(options =>
     ).EnableDetailedErrors();
 });
 ```
+
+## Credits
+Some code has been adapted from code found in .NET Microservices: Architecture for Containerized .NET Applications (de la Torre, Wagner, & Rousos, 2022)

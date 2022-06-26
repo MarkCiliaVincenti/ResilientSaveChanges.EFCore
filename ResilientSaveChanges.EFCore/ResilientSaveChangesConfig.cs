@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace ResilientSaveChanges.EFCore
 {
+    // Credits: Some code has been adapted from code found in .NET Microservices: Architecture for
+    // Containerized .NET Applications (de la Torre, Wagner, & Rousos, 2022)
+
     /// <summary>
     /// Static configuration for ResilientSaveChanges.EFCore, which also acts as an extension class
     /// for <see cref="DbContext"/>.
