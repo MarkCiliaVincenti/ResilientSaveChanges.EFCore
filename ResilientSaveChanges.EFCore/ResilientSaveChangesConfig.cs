@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 namespace ResilientSaveChanges.EFCore
 {
     /// <summary>
-    /// Static configuration for ResilientSaveChanges.EFCore, which also acts as an extension class for <see cref="DbContext"/>.
+    /// Static configuration for ResilientSaveChanges.EFCore, which also acts as an extension class
+    /// for <see cref="DbContext"/>.
     /// </summary>
     public static class ResilientSaveChangesConfig
     {
@@ -17,7 +18,8 @@ namespace ResilientSaveChanges.EFCore
         private static int? _concurrentSaveChangesLimit;
 
         /// <summary>
-        /// Defines how many concurrent ResilientSaveChanges / ResilientSaveChangesAsync can be allowed. Default (null) means unlimited.
+        /// Defines how many concurrent ResilientSaveChanges / ResilientSaveChangesAsync can be allowed.
+        /// Default (null) means unlimited.
         /// </summary>
         public static int? ConcurrentSaveChangesLimit
         {
@@ -33,12 +35,15 @@ namespace ResilientSaveChanges.EFCore
         }
 
         /// <summary>
-        /// <see cref="ILogger"/> instance used for logging long running ResilientSaveChanges / ResilientSaveChangesAsync. Will use <see cref="Debug.WriteLine(string?)"/> if set to null while <see cref="LoggerWarnLongRunning"/> has a value.
+        /// <see cref="ILogger"/> instance used for logging long running ResilientSaveChanges /
+        /// ResilientSaveChangesAsync. Will use <see cref="Debug.WriteLine(string?)"/> if set to null while
+        /// <see cref="LoggerWarnLongRunning"/> has a value.
         /// </summary>
         public static ILogger Logger { get; set; }
 
         /// <summary>
-        /// The number of milliseconds taken to execute the ResilientSaveChanges / ResilientSaveChangesAsync that will trigger a logged warning. Default (null) means disabled.
+        /// The number of milliseconds taken to execute the ResilientSaveChanges / ResilientSaveChangesAsync
+        /// that will trigger a logged warning. Default (null) means disabled.
         /// </summary>
         public static int? LoggerWarnLongRunning { get; set; }
 
@@ -71,8 +76,12 @@ namespace ResilientSaveChanges.EFCore
         /// </summary>
         /// <typeparam name="T">The <see cref="DbContext"/>.</typeparam>
         /// <param name="context">The extended context</param>
-        /// <param name="cancellationToken">The cancellation token passed on to <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>.</param>
-        public static async Task ResilientSaveChangesAsync<T>(this T context, CancellationToken cancellationToken = default) where T : DbContext
+        /// <param name="cancellationToken">The cancellation token passed on
+        /// to <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>.</param>
+        public static async Task ResilientSaveChangesAsync<T>(
+            this T context,
+            CancellationToken cancellationToken = default
+        ) where T : DbContext
         {
             if (_semaphoreSlim != null)
             {
@@ -80,10 +89,10 @@ namespace ResilientSaveChanges.EFCore
             }
             try
             {
-                await ResilientTransaction<T>.New(context).ExecuteAsync(async () =>
-                {
-                    await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                }, cancellationToken).ConfigureAwait(false);
+                await ResilientTransaction<T>.New(context).ExecuteAsync(
+                    async () => await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false),
+                    cancellationToken
+                ).ConfigureAwait(false);
             }
             finally
             {
@@ -124,9 +133,15 @@ namespace ResilientSaveChanges.EFCore
                     {
                         var warning = $"Transaction commit took {stopWatch.ElapsedMilliseconds}ms";
                         if (Logger != null)
+                        {
+                            #pragma warning disable CA2254
                             Logger.LogWarning(warning);
+                            #pragma warning restore CA2254
+                        }
                         else
+                        {
                             Debug.WriteLine(warning);
+                        }
                     }
                 }
             }
@@ -153,9 +168,15 @@ namespace ResilientSaveChanges.EFCore
                     {
                         var warning = $"Transaction commit took {stopWatch.ElapsedMilliseconds}ms";
                         if (Logger != null)
+                        {
+                            #pragma warning disable CA2254
                             Logger.LogWarning(warning);
+                            #pragma warning restore CA2254
+                        }
                         else
+                        {
                             Debug.WriteLine(warning);
+                        }
                     }
                 }
             }

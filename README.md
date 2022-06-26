@@ -26,13 +26,22 @@ public static class Constants
 
 public class MyExecutionStrategy : ExecutionStrategy
 {
-    public MyExecutionStrategy(MyDbContext context) : base(context, Constants.MAX_RETRY_COUNT, TimeSpan.FromSeconds(Constants.MAX_RETRY_DELAY_SECONDS))
+    public MyExecutionStrategy(MyDbContext context) : base(
+        context,
+        Constants.MAX_RETRY_COUNT,
+        TimeSpan.FromSeconds(Constants.MAX_RETRY_DELAY_SECONDS))
     { }
 
-    public MyExecutionStrategy(ExecutionStrategyDependencies dependencies) : base(dependencies, Constants.MAX_RETRY_COUNT, TimeSpan.FromSeconds(Constants.MAX_RETRY_DELAY_SECONDS))
+    public MyExecutionStrategy(ExecutionStrategyDependencies dependencies) : base(
+        dependencies,
+        Constants.MAX_RETRY_COUNT,
+        TimeSpan.FromSeconds(Constants.MAX_RETRY_DELAY_SECONDS))
     { }
 
-    public MyExecutionStrategy(MyDbContext context, int maxRetryCount, TimeSpan maxRetryDelay) : base(context, maxRetryCount, maxRetryDelay)
+    public MyExecutionStrategy(MyDbContext context, int maxRetryCount, TimeSpan maxRetryDelay) : base(
+        context,
+        maxRetryCount,
+        maxRetryDelay)
     { }
 
     protected override bool ShouldRetryOn([NotNull] Exception exception)
@@ -71,7 +80,10 @@ services.AddPooledDbContextFactory<MyDbContext>(options =>
         "8.0.29",
         options =>
         {
-            options.EnableRetryOnFailure(Constants.MAX_RETRY_COUNT, TimeSpan.FromSeconds(Constants.MAX_RETRY_DELAY_SECONDS), null);
+            options.EnableRetryOnFailure(
+                Constants.MAX_RETRY_COUNT, 
+                TimeSpan.FromSeconds(Constants.MAX_RETRY_DELAY_SECONDS),
+                null);
             options.CommandTimeout(Constants.COMMAND_TIMEOUT);
             options.ExecutionStrategy(s => new MyExecutionStrategy(s));
         }
