@@ -7,11 +7,18 @@ using System.Threading.Tasks;
 
 namespace ResilientSaveChanges.EFCore
 {
+    /// <summary>
+    /// Static configuration for ResilientSaveChanges.EFCore, which also acts as an extension class for <see cref="DbContext"/>.
+    /// </summary>
     public static class ResilientSaveChangesConfig
     {
         private static SemaphoreSlim _semaphoreSlim;
 
         private static int? _concurrentSaveChangesLimit;
+
+        /// <summary>
+        /// Defines how many concurrent ResilientSaveChanges / ResilientSaveChangesAsync can be allowed. Default (null) means unlimited.
+        /// </summary>
         public static int? ConcurrentSaveChangesLimit
         {
             get
@@ -25,21 +32,58 @@ namespace ResilientSaveChanges.EFCore
             }
         }
 
+        /// <summary>
+        /// <see cref="ILogger"/> instance used for logging long running ResilientSaveChanges / ResilientSaveChangesAsync. Will use <see cref="Debug.WriteLine(string?)"/> if set to null while <see cref="LoggerWarnLongRunning"/> has a value.
+        /// </summary>
         public static ILogger Logger { get; set; }
+
+        /// <summary>
+        /// The number of milliseconds taken to execute the ResilientSaveChanges / ResilientSaveChangesAsync that will trigger a logged warning. Default (null) means disabled.
+        /// </summary>
         public static int? LoggerWarnLongRunning { get; set; }
 
-        public static async Task ResilientSaveChangesAsync<T>(this T context) where T : DbContext
+        /// <summary>
+        /// Resilient synchronous <see cref="DbContext.SaveChanges()"/>.
+        /// </summary>
+        /// <typeparam name="T">The <see cref="DbContext"/>.</typeparam>
+        /// <param name="context">The extended context</param>
+        public static void ResilientSaveChanges<T>(this T context) where T : DbContext
         {
             if (_semaphoreSlim != null)
             {
-                await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                _semaphoreSlim.Wait();
+            }
+            try
+            {
+                ResilientTransaction<T>.New(context).Execute(() => context.SaveChanges());
+            }
+            finally
+            {
+                if (_semaphoreSlim != null)
+                {
+                    _semaphoreSlim.Release();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Resilient asynchronous <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>.
+        /// </summary>
+        /// <typeparam name="T">The <see cref="DbContext"/>.</typeparam>
+        /// <param name="context">The extended context</param>
+        /// <param name="cancellationToken">The cancellation token passed on to <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>.</param>
+        public static async Task ResilientSaveChangesAsync<T>(this T context, CancellationToken cancellationToken = default) where T : DbContext
+        {
+            if (_semaphoreSlim != null)
+            {
+                await _semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
             try
             {
                 await ResilientTransaction<T>.New(context).ExecuteAsync(async () =>
                 {
-                    await context.SaveChangesAsync().ConfigureAwait(false);
-                }).ConfigureAwait(false);
+                    await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }, cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -58,7 +102,36 @@ namespace ResilientSaveChanges.EFCore
 
             public static ResilientTransaction<T> New(T context) => new(context);
 
-            public async Task ExecuteAsync(Func<Task> action)
+            public void Execute(Func<int> action)
+            {
+                Stopwatch stopWatch = null;
+                if (LoggerWarnLongRunning.HasValue)
+                {
+                    stopWatch = new Stopwatch();
+                    stopWatch.Start();
+                }
+                var strategy = _context.Database.CreateExecutionStrategy();
+                strategy.Execute(() =>
+                {
+                    var transaction = _context.Database.BeginTransaction();
+                    action();
+                    transaction.Commit();
+                });
+                if (LoggerWarnLongRunning.HasValue)
+                {
+                    stopWatch.Stop();
+                    if (stopWatch.ElapsedMilliseconds >= LoggerWarnLongRunning.Value)
+                    {
+                        var warning = $"Transaction commit took {stopWatch.ElapsedMilliseconds}ms";
+                        if (Logger != null)
+                            Logger.LogWarning(warning);
+                        else
+                            Debug.WriteLine(warning);
+                    }
+                }
+            }
+
+            public async Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken)
             {
                 Stopwatch stopWatch = null;
                 if (LoggerWarnLongRunning.HasValue)
@@ -69,9 +142,9 @@ namespace ResilientSaveChanges.EFCore
                 var strategy = _context.Database.CreateExecutionStrategy();
                 await strategy.ExecuteAsync(async () =>
                 {
-                    using var transaction = await _context.Database.BeginTransactionAsync();
+                    using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
                     await action().ConfigureAwait(false);
-                    await transaction.CommitAsync().ConfigureAwait(false);
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 }).ConfigureAwait(false);
                 if (LoggerWarnLongRunning.HasValue)
                 {
