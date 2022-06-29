@@ -91,5 +91,8 @@ services.AddPooledDbContextFactory<MyDbContext>(options =>
 });
 ```
 
+## How to use
+Now simply replace your `context.SaveChanges();` and `await context.SaveChangesAsync();` with `context.ResilientSaveChanges();` and `context.ResilientSaveChangesAsync();` respectively.
+
 ## Credits
 Some code has been adapted from code found in .NET Microservices: Architecture for Containerized .NET Applications (de la Torre, Wagner, & Rousos, 2022)
