@@ -6,16 +6,16 @@
 		<RepositoryUrl>https://github.com/MarkCiliaVincenti/ResilientSaveChanges.EFCore.git</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/MarkCiliaVincenti/ResilientSaveChanges.EFCore</PackageProjectUrl>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<Version>7.0.1</Version>
+		<Version>7.0.1.1</Version>
 		<PackageIcon>logo.png</PackageIcon>
-		<PackageReleaseNotes>Bump Microsoft.EntityFrameworkCore from 6.0.10 to 7.0.0</PackageReleaseNotes>
+		<PackageReleaseNotes>Bump Microsoft.EntityFrameworkCore from 7.0.0 to 7.0.1</PackageReleaseNotes>
 		<Description>A library that allows resilient context.SaveChanges / SaveChangesAsync in Entity Framework Core, logging of long-running transactions and limiting of concurrent SaveChanges.</Description>
 		<Copyright>© 2022 Mark Cilia Vincenti</Copyright>
 		<PackageTags>resilient,resiliency,efcore,savechanges,savechangesasync</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<AssemblyVersion>7.0.1.0</AssemblyVersion>
-		<FileVersion>7.0.1.0</FileVersion>
+		<AssemblyVersion>7.0.1.1</AssemblyVersion>
+		<FileVersion>7.0.1.1</FileVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<IsPackable>true</IsPackable>
 		<IsTrimmable>true</IsTrimmable>
@@ -50,7 +50,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.1" />
 	</ItemGroup>
 
 </Project>
