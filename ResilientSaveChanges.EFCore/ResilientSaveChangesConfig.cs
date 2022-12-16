@@ -57,20 +57,14 @@ namespace ResilientSaveChanges.EFCore
         /// <param name="context">The extended context</param>
         public static void ResilientSaveChanges<T>(this T context) where T : DbContext
         {
-            if (_semaphoreSlim != null)
-            {
-                _semaphoreSlim.Wait();
-            }
+            _semaphoreSlim?.Wait();
             try
             {
                 ResilientTransaction<T>.New(context).Execute(() => context.SaveChanges());
             }
             finally
             {
-                if (_semaphoreSlim != null)
-                {
-                    _semaphoreSlim.Release();
-                }
+                _semaphoreSlim?.Release();
             }
         }
 
@@ -99,10 +93,7 @@ namespace ResilientSaveChanges.EFCore
             }
             finally
             {
-                if (_semaphoreSlim != null)
-                {
-                    _semaphoreSlim.Release();
-                }
+                _semaphoreSlim?.Release();
             }
         }
 
