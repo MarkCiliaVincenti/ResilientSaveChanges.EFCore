@@ -15,8 +15,8 @@
 		<PackageTags>resilient,resiliency,efcore,savechanges,savechangesasync</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<AssemblyVersion>7.0.2</AssemblyVersion>
-		<FileVersion>7.0.2</FileVersion>
+		<AssemblyVersion>7.0.2.0</AssemblyVersion>
+		<FileVersion>7.0.2.0</FileVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<IsPackable>true</IsPackable>
 		<IsTrimmable>true</IsTrimmable>
