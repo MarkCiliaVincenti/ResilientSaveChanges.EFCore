@@ -9,7 +9,7 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<Version>7.0.4.0</Version>
 		<PackageIcon>logo.png</PackageIcon>
-		<PackageReleaseNotes>Enabled deterministic builds, allowing debugging of this library from your code.</PackageReleaseNotes>
+		<PackageReleaseNotes>Support for EFCore 7.0.4</PackageReleaseNotes>
 		<Description>A library that allows resilient context.SaveChanges / SaveChangesAsync in Entity Framework Core, logging of long-running transactions and limiting of concurrent SaveChanges.</Description>
 		<Copyright>© 2023 Mark Cilia Vincenti</Copyright>
 		<PackageTags>resilient,resiliency,efcore,savechanges,savechangesasync</PackageTags>
