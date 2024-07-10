@@ -7,16 +7,16 @@
 		<PackageProjectUrl>https://github.com/MarkCiliaVincenti/ResilientSaveChanges.EFCore</PackageProjectUrl>
 		<Copyright>MIT</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<Version>8.0.0.0</Version>
+		<Version>8.0.7.0</Version>
 		<PackageIcon>logo.png</PackageIcon>
-		<PackageReleaseNotes>Support for EFCore 8.0.0</PackageReleaseNotes>
+		<PackageReleaseNotes>Support for EFCore 8.0.7</PackageReleaseNotes>
 		<Description>A library that allows resilient context.SaveChanges / SaveChangesAsync in Entity Framework Core, logging of long-running transactions and limiting of concurrent SaveChanges.</Description>
 		<Copyright>© 2023 Mark Cilia Vincenti</Copyright>
 		<PackageTags>resilient,resiliency,efcore,savechanges,savechangesasync</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<AssemblyVersion>8.0.0.0</AssemblyVersion>
-		<FileVersion>8.0.0.0</FileVersion>
+		<AssemblyVersion>8.0.7.0</AssemblyVersion>
+		<FileVersion>8.0.7.0</FileVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<IsPackable>true</IsPackable>
 		<IsTrimmable>true</IsTrimmable>
@@ -47,8 +47,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1" PrivateAssets="All" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.14" />
+		<PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.4" PrivateAssets="All" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.7" />
 	</ItemGroup>
 
 </Project>
