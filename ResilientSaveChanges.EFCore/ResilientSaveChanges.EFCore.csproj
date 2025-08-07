@@ -52,6 +52,7 @@
 	<ItemGroup>
 		<PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.25" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+	<PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.8" />
 	</ItemGroup>
 
 </Project>
