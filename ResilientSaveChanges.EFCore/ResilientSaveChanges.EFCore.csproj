@@ -7,16 +7,16 @@
 		<PackageProjectUrl>https://github.com/MarkCiliaVincenti/ResilientSaveChanges.EFCore</PackageProjectUrl>
 		<Copyright>MIT</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<Version>10.0.3</Version>
+		<Version>10.0.3.1</Version>
 		<PackageIcon>logo.png</PackageIcon>
-		<PackageReleaseNotes>Cleaning, minor optimizations, support for EFCore 10.0.3 and enforcing consistent SDK version for total reproducible builds.</PackageReleaseNotes>
+		<PackageReleaseNotes>Small perf optimization.</PackageReleaseNotes>
 		<Description>A library that allows resilient context.SaveChanges / SaveChangesAsync in Entity Framework Core, logging of long-running transactions and limiting of concurrent SaveChanges.</Description>
 		<Copyright>© 2026 Mark Cilia Vincenti</Copyright>
 		<PackageTags>resilient,resiliency,efcore,savechanges,savechangesasync</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<AssemblyVersion>10.0.3.0</AssemblyVersion>
-		<FileVersion>10.0.3.0</FileVersion>
+		<AssemblyVersion>10.0.3.1</AssemblyVersion>
+		<FileVersion>10.0.3.1</FileVersion>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<IsPackable>true</IsPackable>
 		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>

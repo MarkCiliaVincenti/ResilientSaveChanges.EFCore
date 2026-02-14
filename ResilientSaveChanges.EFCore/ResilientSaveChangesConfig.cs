@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ResilientSaveChanges.EFCore;
 
@@ -57,14 +57,19 @@ public static class ResilientSaveChangesConfig
         /// </summary>
         public void ResilientSaveChanges()
         {
-            _semaphoreSlim?.Wait();
+            if (_semaphoreSlim is null)
+            {
+                ResilientTransaction<T>.New(context).Execute(context.SaveChanges);
+                return;
+            }
+            _semaphoreSlim.Wait();
             try
             {
                 ResilientTransaction<T>.New(context).Execute(context.SaveChanges);
             }
             finally
             {
-                _semaphoreSlim?.Release();
+                _semaphoreSlim.Release();
             }
         }
 
@@ -77,10 +82,16 @@ public static class ResilientSaveChangesConfig
             CancellationToken cancellationToken = default
         )
         {
-            if (_semaphoreSlim != null)
+            if (_semaphoreSlim is null)
             {
-                await _semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await ResilientTransaction<T>.New(context).ExecuteAsync(
+                    async () => await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false),
+                    cancellationToken
+                ).ConfigureAwait(false);
+                return;
             }
+
+            await _semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await ResilientTransaction<T>.New(context).ExecuteAsync(
@@ -90,7 +101,7 @@ public static class ResilientSaveChangesConfig
             }
             finally
             {
-                _semaphoreSlim?.Release();
+                _semaphoreSlim.Release();
             }
         }
     }
@@ -152,7 +163,7 @@ public static class ResilientSaveChangesConfig
                 var execStrategy = _context.Database.CreateExecutionStrategy();
                 await execStrategy.ExecuteAsync(async () =>
                 {
-                    using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                    using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
                     await action().ConfigureAwait(false);
                     await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 }).ConfigureAwait(false);
@@ -166,7 +177,7 @@ public static class ResilientSaveChangesConfig
             var strategy = _context.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
-                using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
                 await action().ConfigureAwait(false);
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             }).ConfigureAwait(false);
