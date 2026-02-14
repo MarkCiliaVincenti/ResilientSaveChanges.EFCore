@@ -1,66 +1,66 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ResilientSaveChanges.EFCore
+namespace ResilientSaveChanges.EFCore;
+
+// Credits: Some code has been adapted from code found in .NET Microservices: Architecture for
+// Containerized .NET Applications (de la Torre, Wagner, & Rousos, 2022)
+
+/// <summary>
+/// Static configuration for ResilientSaveChanges.EFCore, which also acts as an extension class
+/// for <see cref="DbContext"/>.
+/// </summary>
+public static class ResilientSaveChangesConfig
 {
-    // Credits: Some code has been adapted from code found in .NET Microservices: Architecture for
-    // Containerized .NET Applications (de la Torre, Wagner, & Rousos, 2022)
+    private static SemaphoreSlim? _semaphoreSlim;
+
+    private static int? _concurrentSaveChangesLimit;
 
     /// <summary>
-    /// Static configuration for ResilientSaveChanges.EFCore, which also acts as an extension class
-    /// for <see cref="DbContext"/>.
+    /// Defines how many concurrent ResilientSaveChanges / ResilientSaveChangesAsync can be allowed.
+    /// Default (null) means unlimited.
     /// </summary>
-    public static class ResilientSaveChangesConfig
+    public static int? ConcurrentSaveChangesLimit
     {
-        private static SemaphoreSlim _semaphoreSlim;
-
-        private static int? _concurrentSaveChangesLimit;
-
-        /// <summary>
-        /// Defines how many concurrent ResilientSaveChanges / ResilientSaveChangesAsync can be allowed.
-        /// Default (null) means unlimited.
-        /// </summary>
-        public static int? ConcurrentSaveChangesLimit
+        get
         {
-            get
-            {
-                return _concurrentSaveChangesLimit;
-            }
-            set
-            {
-                _concurrentSaveChangesLimit = value;
-                _semaphoreSlim = value.HasValue ? new(value.Value) : null;
-            }
+            return _concurrentSaveChangesLimit;
         }
+        set
+        {
+            _concurrentSaveChangesLimit = value;
+            _semaphoreSlim = value.HasValue ? new(value.Value) : null;
+        }
+    }
 
-        /// <summary>
-        /// <see cref="ILogger"/> instance used for logging long running ResilientSaveChanges /
-        /// ResilientSaveChangesAsync. Will use <see cref="Debug.WriteLine(string?)"/> if set to null while
-        /// <see cref="LoggerWarnLongRunning"/> has a value.
-        /// </summary>
-        public static ILogger Logger { get; set; }
+    /// <summary>
+    /// <see cref="ILogger"/> instance used for logging long running ResilientSaveChanges /
+    /// ResilientSaveChangesAsync. Will use <see cref="Debug.WriteLine(string?)"/> if set to null while
+    /// <see cref="LoggerWarnLongRunning"/> has a value.
+    /// </summary>
+    public static ILogger? Logger { get; set; }
 
-        /// <summary>
-        /// The number of milliseconds taken to execute the ResilientSaveChanges / ResilientSaveChangesAsync
-        /// that will trigger a logged warning. Default (null) means disabled.
-        /// </summary>
-        public static int? LoggerWarnLongRunning { get; set; }
+    /// <summary>
+    /// The number of milliseconds taken to execute the ResilientSaveChanges / ResilientSaveChangesAsync
+    /// that will trigger a logged warning. Default (null) means disabled.
+    /// </summary>
+    public static int? LoggerWarnLongRunning { get; set; }
 
+    extension<T>(T context) where T : DbContext
+    {
         /// <summary>
         /// Resilient synchronous <see cref="DbContext.SaveChanges()"/>.
         /// </summary>
-        /// <typeparam name="T">The <see cref="DbContext"/>.</typeparam>
-        /// <param name="context">The extended context</param>
-        public static void ResilientSaveChanges<T>(this T context) where T : DbContext
+        public void ResilientSaveChanges()
         {
             _semaphoreSlim?.Wait();
             try
             {
-                ResilientTransaction<T>.New(context).Execute(() => context.SaveChanges());
+                ResilientTransaction<T>.New(context).Execute(context.SaveChanges);
             }
             finally
             {
@@ -71,14 +71,11 @@ namespace ResilientSaveChanges.EFCore
         /// <summary>
         /// Resilient asynchronous <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>.
         /// </summary>
-        /// <typeparam name="T">The <see cref="DbContext"/>.</typeparam>
-        /// <param name="context">The extended context</param>
         /// <param name="cancellationToken">The cancellation token passed on
         /// to <see cref="DbContext.SaveChangesAsync(CancellationToken)"/>.</param>
-        public static async Task ResilientSaveChangesAsync<T>(
-            this T context,
+        public async Task ResilientSaveChangesAsync(
             CancellationToken cancellationToken = default
-        ) where T : DbContext
+        )
         {
             if (_semaphoreSlim != null)
             {
@@ -96,82 +93,95 @@ namespace ResilientSaveChanges.EFCore
                 _semaphoreSlim?.Release();
             }
         }
+    }
 
-        private class ResilientTransaction<T> where T : DbContext
+    private class ResilientTransaction<T> where T : DbContext
+    {
+        private readonly T _context;
+
+        private ResilientTransaction(T context)
+            => _context = context ?? throw new ArgumentNullException(nameof(context));
+
+        public static ResilientTransaction<T> New(T context) => new(context);
+
+        public void Execute(Func<int> action)
         {
-            private readonly T _context;
-
-            private ResilientTransaction(T context) => _context = context ?? throw new ArgumentNullException(nameof(context));
-
-            public static ResilientTransaction<T> New(T context) => new(context);
-
-            public void Execute(Func<int> action)
+            if (LoggerWarnLongRunning == null)
             {
-                Stopwatch stopWatch = null;
-                if (LoggerWarnLongRunning.HasValue)
-                {
-                    stopWatch = new Stopwatch();
-                    stopWatch.Start();
-                }
-                var strategy = _context.Database.CreateExecutionStrategy();
-                strategy.Execute(() =>
+                var execStrategy = _context.Database.CreateExecutionStrategy();
+                execStrategy.Execute(() =>
                 {
                     var transaction = _context.Database.BeginTransaction();
                     action();
                     transaction.Commit();
                 });
-                if (LoggerWarnLongRunning.HasValue)
-                {
-                    stopWatch.Stop();
-                    if (stopWatch.ElapsedMilliseconds >= LoggerWarnLongRunning.Value)
-                    {
-                        var warning = $"Transaction commit took {stopWatch.ElapsedMilliseconds}ms";
-                        if (Logger != null)
-                        {
-                            #pragma warning disable CA2254
-                            Logger.LogWarning(warning);
-                            #pragma warning restore CA2254
-                        }
-                        else
-                        {
-                            Debug.WriteLine(warning);
-                        }
-                    }
-                }
+
+                return;
             }
 
-            public async Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken)
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+            strategy.Execute(() =>
             {
-                Stopwatch stopWatch = null;
-                if (LoggerWarnLongRunning.HasValue)
+                var transaction = _context.Database.BeginTransaction();
+                action();
+                transaction.Commit();
+            });
+
+            stopWatch.Stop();
+            if (stopWatch.ElapsedMilliseconds >= LoggerWarnLongRunning.Value)
+            {
+                var elapsed = stopWatch.ElapsedMilliseconds;
+                if (Logger != null)
                 {
-                    stopWatch = new Stopwatch();
-                    stopWatch.Start();
+                    Logger.LogWarning("Transaction commit took {ElapsedMilliseconds}ms", elapsed);
                 }
-                var strategy = _context.Database.CreateExecutionStrategy();
-                await strategy.ExecuteAsync(async () =>
+                else
+                {
+                    Debug.WriteLine($"Transaction commit took {elapsed}ms");
+                }
+            }
+        }
+
+        public async Task ExecuteAsync(Func<Task> action, CancellationToken cancellationToken)
+        {
+            if (LoggerWarnLongRunning == null)
+            {
+                var execStrategy = _context.Database.CreateExecutionStrategy();
+                await execStrategy.ExecuteAsync(async () =>
                 {
                     using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
                     await action().ConfigureAwait(false);
                     await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 }).ConfigureAwait(false);
-                if (LoggerWarnLongRunning.HasValue)
+
+                return;
+            }
+
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+                await action().ConfigureAwait(false);
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+            stopWatch.Stop();
+            if (stopWatch.ElapsedMilliseconds >= LoggerWarnLongRunning.Value)
+            {
+                var elapsed = stopWatch.ElapsedMilliseconds;
+                if (Logger != null)
                 {
-                    stopWatch.Stop();
-                    if (stopWatch.ElapsedMilliseconds >= LoggerWarnLongRunning.Value)
-                    {
-                        var warning = $"Transaction commit took {stopWatch.ElapsedMilliseconds}ms";
-                        if (Logger != null)
-                        {
-                            #pragma warning disable CA2254
-                            Logger.LogWarning(warning);
-                            #pragma warning restore CA2254
-                        }
-                        else
-                        {
-                            Debug.WriteLine(warning);
-                        }
-                    }
+                    Logger.LogWarning("Transaction commit took {ElapsedMilliseconds}ms", elapsed);
+                }
+                else
+                {
+                    Debug.WriteLine($"Transaction commit took {elapsed}ms");
                 }
             }
         }
