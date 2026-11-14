@@ -7,8 +7,9 @@
 		<CheckEolTargetFramework>false</CheckEolTargetFramework>
 		<DefineConstants>TRIMMING_COMPATIBLE</DefineConstants>
 		<DefineConstants>AOT_COMPATIBLE</DefineConstants>
+        <Features>$(Features);runtime-async=on</Features>
 	</PropertyGroup>
-	<ItemGroup>
+    <ItemGroup>
 		<AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
 	</ItemGroup>
 </Project>
